@@ -1,4 +1,6 @@
-# CONSTANTS
+# Author: Nick Eby
+# 5.26.2023
+# Tic Tac Toe: CONSTANTS
 
 class GameMeasurements:
     SCREEN_WIDTH = 800
@@ -9,6 +11,7 @@ class GameMeasurements:
     HORIZONTAL_GAP = (SCREEN_WIDTH - BOARD_WIDTH) / 2
     VERTICAL_GAP = (SCREEN_HEIGHT - BOARD_HEIGHT) / 2
     LINE_WIDTH = 5
+    FONT_SIZE = 36
 
 
 class GameColors:
