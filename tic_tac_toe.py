@@ -16,7 +16,7 @@ class TicTacToe:
         self.is_running = True
         self.turn = True # True => P1 turn, False => P2 turn or CPU turn (depending on mode)
         self.grid = [0, 0, 0, 0, 0, 0, 0, 0, 0] # 0 => nothing, 1 => P1 / X, 2 => P2 or CPU / O
-        # self.grid = [0, 0, 2, 0, 1, 0, 0, 0, 0]
+        # self.grid = [1, 2, 2, 1, 0, 0, 0, 0, 0]
 
         self.p1_wins = 0
         self.p2_wins = 0 # for local two player, also represents CPU wins!!!
@@ -154,8 +154,8 @@ class TicTacToe:
     def get_available_squares(self, grid):
         """Returns list of indexes of available squares"""
         return [i for i, square in enumerate(grid) if square == 0]
-
-    def minimax(self, grid_copy, is_maximizing):
+    
+    def minimax_primitive(self, grid_copy, is_maximizing):
         """Minimax algorithm, can manipulate grid_copy because it is a copy"""
 
         # Check if the game has reached a terminal state
@@ -180,7 +180,7 @@ class TicTacToe:
                 new_grid[index] = 2
 
                 # recursively call minimax
-                value, _ = self.minimax(new_grid, False)
+                value, _ = self.minimax_primitive(new_grid, False)
 
                 if value > value_index[0]:
                     value_index = (value, index)
@@ -198,11 +198,63 @@ class TicTacToe:
                 new_grid[index] = 1
 
                 # recursively call minimax
-                value, _ = self.minimax(new_grid, True)
+                value, _ = self.minimax_primitive(new_grid, True)
 
                 if value < value_index[0]:
                     value_index = (value, index)
 
+            return value_index
+
+
+    def minimax_advanced(self, grid_copy, is_maximizing):
+        """Minimax algorithm, can manipulate grid_copy because it is a copy"""
+
+        # Check if the game has reached a terminal state
+        num_empty_squares = len(self.get_available_squares(grid_copy))
+        if num_empty_squares == 0:
+            # Evaluate the state and return the value of state
+            winner = self.check_winner(grid_copy)
+            if winner == 1:
+                return (-1 * (num_empty_squares + 1), None)
+            elif winner == 2:
+                return (1 * (num_empty_squares + 1), None)
+            else:
+                return (0, None)
+        
+        # If player is P2 i.e. CPU i.e. MAX
+        if is_maximizing:
+            value_index = (float('-inf'), None)
+
+            # iterate over possible actions
+            for index in self.get_available_squares(grid_copy):
+                # copy grid and apply index
+                new_grid = grid_copy.copy()
+                new_grid[index] = 2
+
+                # recursively call minimax
+                value, _ = self.minimax_advanced(new_grid, False)
+                value = value * len(self.get_available_squares(grid_copy))
+
+                if value > value_index[0]:
+                    value_index = (value, index)
+            return value_index
+
+        # If player is P1 i.e. Player i.e. MIN
+        else:
+            value_index = (float('inf'), None)
+
+            # iterate over possible actions
+            for index in self.get_available_squares(grid_copy):
+                # copy grid and apply index
+                new_grid = grid_copy.copy()
+                new_grid[index] = 1
+
+                # recursively call minimax
+                value, _ = self.minimax_advanced(new_grid, True)
+                value = value * len(self.get_available_squares(grid_copy))
+
+                if value < value_index[0]:
+                    value_index = (value, index)
             return value_index
     
     def local_2_player(self):
@@ -235,11 +287,18 @@ class TicTacToe:
                         self.handle_click(event)
 
     def cpu_difficult(self):
-        """Handles events for CPU: Difficult; CPU follows difficult selection against P1"""
+        """Handles events for CPU: Difficult; calls minimax_primitive because this was my first iteration of minimax"""
         if not self.turn:
             self.turn = not self.turn
-            # HANDLE CPU DIFFICULT CHOICE!!!
-            #######
+            # all squares open so randomize first choice for CPU
+            if len(self.get_available_squares(self.grid)) == 9:
+                self.grid[random.choice([0, 2, 4, 6, 8])] = 2 # optimize later maybe??
+            else:
+                # uses minimax algorithm to choose optimal choice for CPU
+                grid_copy = self.grid.copy()
+                val, index = self.minimax_primitive(grid_copy, True)
+                print("Val: {} | Index: {}".format(val, index))
+                self.grid[index] = 2
         elif self.turn:
             for event in pygame.event.get():
                 # handle quit
@@ -260,7 +319,7 @@ class TicTacToe:
             else:
                 # uses minimax algorithm to choose optimal choice for CPU
                 grid_copy = self.grid.copy()
-                val, index = self.minimax(grid_copy, True)
+                val, index = self.minimax_advanced(grid_copy, True)
                 print("Val: {} | Index: {}".format(val, index))
                 self.grid[index] = 2
         elif self.turn:
