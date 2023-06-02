@@ -24,6 +24,8 @@
 20. **Community and resources**: Engage with the Pygame community, participate in forums or online discussions, and utilize online tutorials, documentation, and examples to learn and improve your skills.
 
 
+\* from ChatGPT
+
 ## Pygame Reference
 
 #### Install and Import

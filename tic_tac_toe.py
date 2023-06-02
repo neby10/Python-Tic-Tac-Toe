@@ -51,6 +51,20 @@ class Board:
         if num_empty == 0: # no winners and no available spots means 'CAT'
             return 3
         return 0
+    
+class Player():
+    def __init__(self, name, player):
+        self.name = name
+        self.player = player
+    def get_move(self):
+        pass
+
+class RandomCPU(Player):
+    def __init__(self, name, player):
+        super().__init__(name, player)
+    
+    def get_move(self, board):
+        return random.choice(board.get_empty_squares())
 
 class TicTacToe:
     def __init__(self, screen, board, mode):
@@ -301,7 +315,7 @@ class TicTacToe:
     def local_2_player(self):
         """Handles events for Local: 2 Player"""
         for event in pygame.event.get():
-            # handle quit
+            # handle quit game
             if event.type == pygame.QUIT:
                 self.board.in_game = False
             # handle player 1 or player 2 click
@@ -309,13 +323,16 @@ class TicTacToe:
                 if event.button == 1:
                     self.handle_click(event)
 
-    def cpu_random(self):
+    def cpu_random(self, randomCPU):
         """Handles events for CPU: Random; CPU follows random selection against P1"""
         if not self.board.turn:
+            # switch turn variable
             while not self.board.turn:
-                random_int = random.randint(0, 8)
-                if self.board.grid[random_int] == 0:
-                    self.board.grid[random_int] = 2
+                # randomize CPU choice
+                move = randomCPU.get_move(self.board)
+                # random_int = random.randint(0, 8)
+                if self.board.grid[move] == 0:
+                    self.board.grid[move] = 2
                     self.board.turn = not self.board.turn
         elif self.board.turn:
             for event in pygame.event.get():
@@ -330,6 +347,7 @@ class TicTacToe:
     def cpu_difficult(self):
         """Handles events for CPU: Difficult; calls minimax_primitive because this was my first iteration of minimax"""
         if not self.board.turn:
+            # switch turn variable
             self.board.turn = not self.board.turn
             # all squares open so randomize first choice for CPU
             if len(self.board.get_empty_squares()) == 9:
@@ -351,6 +369,7 @@ class TicTacToe:
     def cpu_mega_difficult(self):
         """Handles events for CPU: Mega Difficult; CPU follows mega difficult selection against P1"""
         if not self.board.turn:
+            # switch turn variable
             self.board.turn = not self.board.turn
             # all squares open so randomize first choice for CPU
             if len(self.board.get_empty_squares()) == 9:
@@ -378,6 +397,7 @@ class TicTacToe:
             print("Playing Mode 1: Local 2 Player")
         elif self.mode == 2:
             print("Playing Mode 2: CPU: Random")
+            randomCPU = RandomCPU("RCPU", 2)
         elif self.mode == 3:
             print("Playing Mode 3: CPU: Difficult")
         elif self.mode == 4:
@@ -394,7 +414,7 @@ class TicTacToe:
             elif self.mode == 1:
                 self.local_2_player()
             elif self.mode == 2:
-                self.cpu_random()
+                self.cpu_random(randomCPU)
             elif self.mode == 3:
                 self.cpu_difficult()
             elif self.mode == 4:
@@ -413,8 +433,6 @@ class TicTacToe:
                     pass
                 # reset grid
                 self.board.reset_board()
-
-                print(winner)
 
             # Update game screen
             pygame.display.flip()
