@@ -94,6 +94,7 @@ class SmartCPU(Player):
         # find MAX value, index where P1 and turn is True or P2 and turn is False
         if (player_MAX == 1 and board.turn) or (player_MAX == 2 and not board.turn):
             value_index = (float('-inf'), None)
+            
             for index in board.get_empty_squares():
                 # set grid to player number, turn to other person
                 board.grid[index] = player_MAX

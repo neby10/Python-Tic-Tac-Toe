@@ -10,28 +10,66 @@ import pygame, random
 from constants import GameColors, GameMeasurements as GM
 from helper_functions import render_text
 
+class Board:
+    def __init__(self):
+        self.grid = [0] * 9
+        self.turn = True
+        self.in_game = True
+        self.p1_wins = 0
+        self.p2_wins = 0
+        self.total_cats = 0
+        self.total_games = 0
+
+    def print_board(self):
+        rows = ["{}|{}|{}".format(self.grid[i], self.grid[i+1], self.grid[i+2]) for i in range(0, 9, 3)]
+        print("\n".join(rows))
+        print()
+
+    def reset_board(self):
+        self.grid = [0] * 9
+
+    def get_empty_squares(self):
+        return [i for i, square in enumerate(self.grid) if square == 0]
+
+    def check_winner(self):
+        """Return winner: 0, 1, 2, 3
+        0 = no winner yet, 1 = P1, 2 = P2, 3 = CAT"""
+        num_empty = sum(1 for i in range(9) if self.grid[i] == 0)
+
+        # check each of the eight ways to win
+        for player in range(1, 3, 1):
+            if (self.grid[0] == player and self.grid[1] == player and self.grid[2] == player) or \
+               (self.grid[3] == player and self.grid[4] == player and self.grid[5] == player) or \
+               (self.grid[6] == player and self.grid[7] == player and self.grid[8] == player) or \
+               (self.grid[0] == player and self.grid[3] == player and self.grid[6] == player) or \
+               (self.grid[1] == player and self.grid[4] == player and self.grid[7] == player) or \
+               (self.grid[2] == player and self.grid[5] == player and self.grid[8] == player) or \
+               (self.grid[0] == player and self.grid[4] == player and self.grid[8] == player) or \
+                (self.grid[2] == player and self.grid[4] == player and self.grid[6] == player):
+                return player
+
+        if num_empty == 0: # no winners and no available spots means 'CAT'
+            return 3
+        return 0
+
 class TicTacToe:
-    def __init__(self, screen, mode):
+    def __init__(self, screen, board, mode):
         """Constructor for TicTacToe class; initializes necessary variables"""
         print("Tic Tac Toe game starting...")
         self.screen = screen
+        self.board = board
         self.mode = mode
-        self.is_running = True
-        self.turn = True # True => P1 turn, False => P2 turn or CPU turn (depending on mode)
-        self.grid = [0, 0, 0, 0, 0, 0, 0, 0, 0] # 0 => nothing, 1 => P1 / X, 2 => P2 or CPU / O
-        self.p1_wins = 0
-        self.p2_wins = 0 # for local two player, also represents CPU wins!!!
 
     def __del__(self):
         """Destructor for TicTacToe class"""
-        print("Tic Tac Toe game ending... P1={} | P2={}".format(self.p1_wins, self.p2_wins))
+        print("Tic Tac Toe game ending... P1={} | P2={}".format(self.board.p1_wins, self.board.p2_wins))
 
     def check_valid_click(self, index):
         """Check validity of box click"""
         # check for valid click in grid
-        if self.grid[index] == 0:
-            self.grid[index] = 1 if self.turn else 2
-            self.turn = not self.turn
+        if self.board.grid[index] == 0:
+            self.board.grid[index] = 1 if self.board.turn else 2
+            self.board.turn = not self.board.turn
 
     def handle_click(self, event):
         """Handle box click location"""
@@ -78,33 +116,6 @@ class TicTacToe:
                 # BOX 9
                 print("Box 9: Mouse clicked at x={}, y={}".format(x, y))
                 self.check_valid_click(8)
-
-    def check_winner(self, grid):
-        """Check for winner; returns 0 for no winner yet, 1 for p1, 2 for p2, 3 for 'CAT'"""
-        # Check for number of empty squares i.e. the number of squares that are 0
-        num_empty = sum(1 for i in range(9) if self.grid[i] == 0)
-
-        # check each of the eight ways to win
-        for player in range(1, 3, 1):
-            if grid[0] == player and grid[1] == player and grid[2] == player: # top row
-                return player
-            elif grid[3] == player and grid[4] == player and grid[5] == player: # middle row
-                return player
-            elif grid[6] == player and grid[7] == player and grid[8] == player: # bottom row
-                return player
-            elif grid[0] == player and grid[3] == player and grid[6] == player: # left column
-                return player
-            elif grid[1] == player and grid[4] == player and grid[7] == player: # middle column
-                return player
-            elif grid[2] == player and grid[5] == player and grid[8] == player: # right column
-                return player
-            elif grid[0] == player and grid[4] == player and grid[8] == player: # left to right diagonal
-                return player
-            elif grid[2] == player and grid[4] == player and grid[6] == player: # right to left diagonal
-                return player
-            elif num_empty == 0 and player == 2: # no winners and no available spots after checking player 2 means 'CAT'
-                return 3
-        return 0
     
     def draw_screen(self):
         """Updates pygame screen details"""
@@ -119,16 +130,16 @@ class TicTacToe:
         pygame.draw.line(self.screen, GameColors.REDDISH, (GM.HORIZONTAL_GAP, GM.VERTICAL_GAP + (2 * GM.BOX_SIZE)), (GM.SCREEN_WIDTH - GM.HORIZONTAL_GAP, GM.VERTICAL_GAP + (2 * GM.BOX_SIZE)), (GM.LINE_WIDTH))
 
         # Display player turn
-        render_text(self.screen, "Turn: Player 1 (X)" if self.turn else "Turn: Player 2 (O)", GM.SCREEN_WIDTH // 2, GM.BOX_SIZE // 6, font_size=44, font_color=GameColors.BLUEISH)
+        render_text(self.screen, "Turn: Player 1 (X)" if self.board.turn else "Turn: Player 2 (O)", GM.SCREEN_WIDTH // 2, GM.BOX_SIZE // 6, font_size=44, font_color=GameColors.BLUEISH)
 
         # Display player 1 wins count
-        render_text(self.screen, "P1: {}".format(self.p1_wins), GM.BOX_SIZE, GM.BOX_SIZE / 6, font_color=GameColors.LIGHTERGREY)
+        render_text(self.screen, "P1: {}".format(self.board.p1_wins), GM.BOX_SIZE, GM.BOX_SIZE / 6, font_color=GameColors.LIGHTERGREY)
 
         # Display player 2 wins count
-        render_text(self.screen, "P2: {}".format(self.p2_wins), GM.SCREEN_WIDTH - GM.BOX_SIZE, GM.BOX_SIZE / 6, font_color=GameColors.LIGHTERGREY)
+        render_text(self.screen, "P2: {}".format(self.board.p2_wins), GM.SCREEN_WIDTH - GM.BOX_SIZE, GM.BOX_SIZE / 6, font_color=GameColors.LIGHTERGREY)
 
         # Display grid values
-        for index, item in enumerate(self.grid):
+        for index, item in enumerate(self.board.grid):
             x = GM.HORIZONTAL_GAP + (GM.BOX_SIZE * (index % 3)) + (GM.BOX_SIZE / 2)
             y = GM.VERTICAL_GAP + (GM.BOX_SIZE * (index // 3)) + (GM.BOX_SIZE / 2)
             font = pygame.font.Font(None, 60)
@@ -151,69 +162,14 @@ class TicTacToe:
                 pass
             else:
                 print("TICTACTOE GRID_VALUE_ERROR: Issue with grid. This should not be printed.")
-
-    def get_available_squares(self, grid):
-        """Returns list of indexes of available squares"""
-        return [i for i, square in enumerate(grid) if square == 0]
     
-    def minimax_primitive(self, grid_copy, is_maximizing):
+    def minimax_primitive(self, board, is_maximizing):
         """Minimax algorithm, can manipulate grid_copy because it is a copy"""
 
         # Check if the game has reached a terminal state
-        if len(self.get_available_squares(grid_copy)) == 0:
+        if len(self.board.get_empty_squares()) == 0:
             # Evaluate the state and return the value of state
-            winner = self.check_winner(grid_copy)
-            if winner == 1:
-                return (-1, None)
-            elif winner == 2:
-                return (1, None)
-            else:
-                return (0, None)
-        
-        # If player is P2 i.e. CPU i.e. MAX
-        if is_maximizing:
-            value_index = (-1000, None)
-
-            # iterate over possible actions
-            for index in self.get_available_squares(grid_copy):
-                # copy grid and apply index
-                new_grid = grid_copy.copy()
-                new_grid[index] = 2
-
-                # recursively call minimax
-                value, _ = self.minimax_primitive(new_grid, False)
-
-                if value > value_index[0]:
-                    value_index = (value, index)
-
-            return value_index
-
-        # If player is P1 i.e. Player i.e. MIN
-        else:
-            value_index = (1000, None)
-
-            # iterate over possible actions
-            for index in self.get_available_squares(grid_copy):
-                # copy grid and apply index
-                new_grid = grid_copy.copy()
-                new_grid[index] = 1
-
-                # recursively call minimax
-                value, _ = self.minimax_primitive(new_grid, True)
-
-                if value < value_index[0]:
-                    value_index = (value, index)
-
-            return value_index
-
-
-    def minimax_advanced(self, grid_copy, is_maximizing, alpha=float('-inf'), beta=float('inf')):
-        """Minimax algorithm, can manipulate grid_copy because it is a copy"""
-
-        # Check if the game has reached a terminal state
-        if (len(self.get_available_squares(grid_copy)) == 0) or self.check_winner(grid_copy):
-            # Evaluate the state and return the value of state
-            winner = self.check_winner(grid_copy)
+            winner = self.board.check_winner()
             if winner == 1:
                 return (-1, None)
             elif winner == 2:
@@ -226,14 +182,86 @@ class TicTacToe:
             value_index = (float('-inf'), None)
 
             # iterate over possible actions
-            for index in self.get_available_squares(grid_copy):
-                # copy grid and apply index
-                new_grid = grid_copy.copy()
-                new_grid[index] = 2
+            for index in self.board.get_empty_squares():
+
+                # change square
+                self.board.grid[index] = 2
+                self.board.turn = not self.board.turn
 
                 # recursively call minimax
-                value, _ = self.minimax_advanced(new_grid, False)
-                value = value * len(self.get_available_squares(grid_copy))
+                value, _ = self.minimax_primitive(self.board, False)
+
+                # undo change
+                self.board.turn = not self.board.turn
+                self.board.grid[index] = 0
+
+
+                value = value * len(self.board.get_empty_squares())
+
+                if value > value_index[0]:
+                    value_index = (value, index)
+
+            return value_index
+
+        # If player is P1 i.e. Player i.e. MIN
+        else:
+            value_index = (float('inf'), None)
+
+            # iterate over possible actions
+            for index in self.board.get_empty_squares():
+                # change square
+                self.board.grid[index] = 1
+                self.board.turn = not self.board.turn
+
+                # recursively call minimax
+                value, _ = self.minimax_primitive(self.board, True)
+
+                # undo square
+                self.board.turn = not self.board.turn
+                self.board.grid[index] = 0
+
+
+                value = value * len(self.board.get_empty_squares())
+
+                if value < value_index[0]:
+                    value_index = (value, index)
+
+            return value_index
+
+
+    def minimax_advanced(self, board, is_maximizing, alpha=float('-inf'), beta=float('inf')):
+        """Minimax algorithm, can manipulate grid_copy because it is a copy"""
+        
+        # Check if the game has reached a terminal state
+        if (len(self.board.get_empty_squares()) == 0) or self.board.check_winner():
+            # Evaluate the state and return the value of state
+            winner = self.board.check_winner()
+            if winner == 1:
+                return (-1, None)
+            elif winner == 2:
+                return (1, None)
+            else:
+                return (0, None)
+        
+        # If player is P2 i.e. CPU i.e. MAX
+        if is_maximizing:
+            value_index = (float('-inf'), None)
+
+            # iterate over possible actions
+            for index in self.board.get_empty_squares():
+
+                # change board values
+                self.board.grid[index] = 2
+                self.board.turn = not self.board.turn
+
+                # recursively call minimax
+                value, _ = self.minimax_advanced(self.board, False)
+
+                # reset board values
+                self.board.turn = not board.turn
+                self.board.grid[index] = 0
+
+                value = value * len(self.board.get_empty_squares())
 
                 if value > value_index[0]:
                     value_index = (value, index)
@@ -248,14 +276,19 @@ class TicTacToe:
             value_index = (float('inf'), None)
 
             # iterate over possible actions
-            for index in self.get_available_squares(grid_copy):
-                # copy grid and apply index
-                new_grid = grid_copy.copy()
-                new_grid[index] = 1
+            for index in self.board.get_empty_squares():
+                # change board values
+                self.board.grid[index] = 1
+                self.board.turn = not self.board.turn
 
                 # recursively call minimax
-                value, _ = self.minimax_advanced(new_grid, True)
-                value = value * len(self.get_available_squares(grid_copy))
+                value, _ = self.minimax_advanced(self.board, True)
+
+                # undo value changes
+                board.turn = not board.turn
+                board.grid[index] = 0
+
+                value = value * len(self.board.get_empty_squares())
 
                 if value < value_index[0]:
                     value_index = (value, index)
@@ -270,7 +303,7 @@ class TicTacToe:
         for event in pygame.event.get():
             # handle quit
             if event.type == pygame.QUIT:
-                self.is_running = False
+                self.board.in_game = False
             # handle player 1 or player 2 click
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
@@ -278,17 +311,17 @@ class TicTacToe:
 
     def cpu_random(self):
         """Handles events for CPU: Random; CPU follows random selection against P1"""
-        if not self.turn:
-            while not self.turn:
+        if not self.board.turn:
+            while not self.board.turn:
                 random_int = random.randint(0, 8)
-                if self.grid[random_int] == 0:
-                    self.grid[random_int] = 2
-                    self.turn = not self.turn
-        elif self.turn:
+                if self.board.grid[random_int] == 0:
+                    self.board.grid[random_int] = 2
+                    self.board.turn = not self.board.turn
+        elif self.board.turn:
             for event in pygame.event.get():
                 # handle quit
                 if event.type == pygame.QUIT:
-                    self.is_running = False
+                    self.board.in_game = False
                 # handle player 1 click
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:
@@ -296,22 +329,20 @@ class TicTacToe:
 
     def cpu_difficult(self):
         """Handles events for CPU: Difficult; calls minimax_primitive because this was my first iteration of minimax"""
-        if not self.turn:
-            self.turn = not self.turn
+        if not self.board.turn:
+            self.board.turn = not self.board.turn
             # all squares open so randomize first choice for CPU
-            if len(self.get_available_squares(self.grid)) == 9:
-                self.grid[random.choice([0, 2, 4, 6, 8])] = 2 # optimize later maybe??
+            if len(self.board.get_empty_squares()) == 9:
+                self.board.grid[random.choice([0, 2, 4, 6, 8])] = 2 # optimize later maybe??
             else:
                 # uses minimax algorithm to choose optimal choice for CPU
-                grid_copy = self.grid.copy()
-                val, index = self.minimax_primitive(grid_copy, True)
-                # print("Val: {} | Index: {}".format(val, index))
-                self.grid[index] = 2
-        elif self.turn:
+                val, index = self.minimax_primitive(self.board, True)
+                self.board.grid[index] = 2
+        elif self.board.turn:
             for event in pygame.event.get():
                 # handle quit
                 if event.type == pygame.QUIT:
-                    self.is_running = False
+                    self.board.in_game = False
                 # handle player 1 click
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:
@@ -319,22 +350,21 @@ class TicTacToe:
 
     def cpu_mega_difficult(self):
         """Handles events for CPU: Mega Difficult; CPU follows mega difficult selection against P1"""
-        if not self.turn:
-            self.turn = not self.turn
+        if not self.board.turn:
+            self.board.turn = not self.board.turn
             # all squares open so randomize first choice for CPU
-            if len(self.get_available_squares(self.grid)) == 9:
-                self.grid[random.choice([0, 2, 4, 6, 8])] = 2 # optimize later maybe??
+            if len(self.board.get_empty_squares()) == 9:
+                self.board.grid[random.choice([0, 2, 4, 6, 8])] = 2 # optimize later maybe??
             else:
                 # uses minimax algorithm to choose optimal choice for CPU
-                grid_copy = self.grid.copy()
-                val, index = self.minimax_advanced(grid_copy, True)
+                val, index = self.minimax_advanced(self.board, True)
                 # print("Val: {} | Index: {}".format(val, index))
-                self.grid[index] = 2
-        elif self.turn:
+                self.board.grid[index] = 2
+        elif self.board.turn:
             for event in pygame.event.get():
                 # handle quit
                 if event.type == pygame.QUIT:
-                    self.is_running = False
+                    self.board.in_game = False
                 # handle player 1 click
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:
@@ -353,14 +383,14 @@ class TicTacToe:
         elif self.mode == 4:
             print("Playing Mode 4: CPU: Mega Difficult")
 
-        while self.is_running:
+        while self.board.in_game:
 
             # Draw Board
             self.draw_screen()
 
             # Event handling based on mode, each function is an event handler for that mode
             if self.mode == 0:
-                self.is_running = False
+                self.board.in_game = False
             elif self.mode == 1:
                 self.local_2_player()
             elif self.mode == 2:
@@ -371,18 +401,18 @@ class TicTacToe:
                 self.cpu_mega_difficult()        
 
             # Check for a winner
-            winner = self.check_winner(self.grid)
+            winner = self.board.check_winner()
             if winner:
                 # update wins count
                 if winner == 1:
-                    self.p1_wins += 1
+                    self.board.p1_wins += 1
                 elif winner == 2:
-                    self.p2_wins += 1
+                    self.board.p2_wins += 1
                 elif winner == 3:
                     # do nothing except reset board for now
                     pass
                 # reset grid
-                self.grid = [0] * 9
+                self.board.reset_board()
 
                 print(winner)
 

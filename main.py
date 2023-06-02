@@ -3,7 +3,7 @@
 # Tic Tac Toe: Main 
 
 import pygame
-from tic_tac_toe import TicTacToe
+from tic_tac_toe import TicTacToe, Board
 from constants import GameColors, GameMeasurements as GM
 from helper_functions import render_text
 
@@ -59,7 +59,8 @@ if __name__ == '__main__':
 
     
     # Create Game Instance and Run Game
-    game = TicTacToe(screen, mode)
+    board = Board()
+    game = TicTacToe(screen, board, mode)
     game.game_loop()
 
     # Exit pygame
