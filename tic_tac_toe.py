@@ -1,11 +1,14 @@
-# Author: Nick Eby
-# 5.26.2023
-# Tic Tac Toe: TicTacToe Class
+# Author: Nicholas Eby
+# Date Created: 5.26.2023
+# Project: TicTacToe - TicTacToe Class
+# Website: https://nicholaseby.com
+# GitHub: https://github.com/neby10
+# LinkedIn: https://www.linkedin.com/in/nicholas-eby-software-engineer/
+# Twitter: @neby10_sisyphus
 
 import pygame, random
 from constants import GameColors, GameMeasurements as GM
 from helper_functions import render_text
-
 
 class TicTacToe:
     def __init__(self, screen, mode):
@@ -16,8 +19,6 @@ class TicTacToe:
         self.is_running = True
         self.turn = True # True => P1 turn, False => P2 turn or CPU turn (depending on mode)
         self.grid = [0, 0, 0, 0, 0, 0, 0, 0, 0] # 0 => nothing, 1 => P1 / X, 2 => P2 or CPU / O
-        # self.grid = [1, 2, 2, 1, 0, 0, 0, 0, 0]
-
         self.p1_wins = 0
         self.p2_wins = 0 # for local two player, also represents CPU wins!!!
 
@@ -206,18 +207,17 @@ class TicTacToe:
             return value_index
 
 
-    def minimax_advanced(self, grid_copy, is_maximizing):
+    def minimax_advanced(self, grid_copy, is_maximizing, alpha=float('-inf'), beta=float('inf')):
         """Minimax algorithm, can manipulate grid_copy because it is a copy"""
 
         # Check if the game has reached a terminal state
-        num_empty_squares = len(self.get_available_squares(grid_copy))
-        if num_empty_squares == 0:
+        if (len(self.get_available_squares(grid_copy)) == 0) or self.check_winner(grid_copy):
             # Evaluate the state and return the value of state
             winner = self.check_winner(grid_copy)
             if winner == 1:
-                return (-1 * (num_empty_squares + 1), None)
+                return (-1, None)
             elif winner == 2:
-                return (1 * (num_empty_squares + 1), None)
+                return (1, None)
             else:
                 return (0, None)
         
@@ -237,6 +237,10 @@ class TicTacToe:
 
                 if value > value_index[0]:
                     value_index = (value, index)
+
+                alpha = max(alpha, value_index[0])
+                if alpha >= beta:
+                    break
             return value_index
 
         # If player is P1 i.e. Player i.e. MIN
@@ -255,6 +259,10 @@ class TicTacToe:
 
                 if value < value_index[0]:
                     value_index = (value, index)
+
+                beta = max(beta, value_index[0])
+                if alpha >= beta:
+                    break
             return value_index
     
     def local_2_player(self):
@@ -297,7 +305,7 @@ class TicTacToe:
                 # uses minimax algorithm to choose optimal choice for CPU
                 grid_copy = self.grid.copy()
                 val, index = self.minimax_primitive(grid_copy, True)
-                print("Val: {} | Index: {}".format(val, index))
+                # print("Val: {} | Index: {}".format(val, index))
                 self.grid[index] = 2
         elif self.turn:
             for event in pygame.event.get():
@@ -320,7 +328,7 @@ class TicTacToe:
                 # uses minimax algorithm to choose optimal choice for CPU
                 grid_copy = self.grid.copy()
                 val, index = self.minimax_advanced(grid_copy, True)
-                print("Val: {} | Index: {}".format(val, index))
+                # print("Val: {} | Index: {}".format(val, index))
                 self.grid[index] = 2
         elif self.turn:
             for event in pygame.event.get():

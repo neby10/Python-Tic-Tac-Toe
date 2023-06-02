@@ -1,9 +1,13 @@
-# Author: Nick Eby
-# 5.30.2023
-# Tic Tac Toe: Reinforcement Learning
+# Author: Nicholas Eby
+# Date Created: 5.30.2023
+# Project: TicTacToe - TicTacToe Game Simulator
+# Website: https://nicholaseby.com
+# GitHub: https://github.com/neby10
+# LinkedIn: https://www.linkedin.com/in/nicholas-eby-software-engineer/
+# Twitter: @neby10_sisyphus
 
 # Imports
-import random
+import random, matplotlib.pyplot as plt
 
 class Board:
     def __init__(self):
@@ -16,9 +20,8 @@ class Board:
         self.total_games = 0
 
     def print_board(self):
-        print("{}|{}|{}".format(self.grid[0], self.grid[1], self.grid[2]))
-        print("{}|{}|{}".format(self.grid[3], self.grid[4], self.grid[5]))
-        print("{}|{}|{}".format(self.grid[6], self.grid[7], self.grid[8]))
+        rows = ["{}|{}|{}".format(self.grid[i], self.grid[i+1], self.grid[i+2]) for i in range(0, 9, 3)]
+        print("\n".join(rows))
         print()
 
     def reset_board(self):
@@ -34,26 +37,19 @@ class Board:
 
         # check each of the eight ways to win
         for player in range(1, 3, 1):
-            if self.grid[0] == player and self.grid[1] == player and self.grid[2] == player: # top row
+            if (self.grid[0] == player and self.grid[1] == player and self.grid[2] == player) or \
+               (self.grid[3] == player and self.grid[4] == player and self.grid[5] == player) or \
+               (self.grid[6] == player and self.grid[7] == player and self.grid[8] == player) or \
+               (self.grid[0] == player and self.grid[3] == player and self.grid[6] == player) or \
+               (self.grid[1] == player and self.grid[4] == player and self.grid[7] == player) or \
+               (self.grid[2] == player and self.grid[5] == player and self.grid[8] == player) or \
+               (self.grid[0] == player and self.grid[4] == player and self.grid[8] == player) or \
+                (self.grid[2] == player and self.grid[4] == player and self.grid[6] == player):
                 return player
-            elif self.grid[3] == player and self.grid[4] == player and self.grid[5] == player: # middle row
-                return player
-            elif self.grid[6] == player and self.grid[7] == player and self.grid[8] == player: # bottom row
-                return player
-            elif self.grid[0] == player and self.grid[3] == player and self.grid[6] == player: # left column
-                return player
-            elif self.grid[1] == player and self.grid[4] == player and self.grid[7] == player: # middle column
-                return player
-            elif self.grid[2] == player and self.grid[5] == player and self.grid[8] == player: # right column
-                return player
-            elif self.grid[0] == player and self.grid[4] == player and self.grid[8] == player: # left to right diagonal
-                return player
-            elif self.grid[2] == player and self.grid[4] == player and self.grid[6] == player: # right to left diagonal
-                return player
-            elif num_empty == 0 and player == 2: # no winners and no available spots after checking player 2 means 'CAT'
-                return 3
-        return 0
 
+        if num_empty == 0: # no winners and no available spots means 'CAT'
+            return 3
+        return 0
 
 class Player():
     def __init__(self, name, player):
@@ -74,19 +70,19 @@ class SmartCPU(Player):
         super().__init__(name, player)
     
     def get_move(self, board):
-        if len(board.get_empty_squares()) == 9: # LATER: can we optimize here by choosing the middle square every time instead of a random square???
-            return random.choice(board.get_empty_squares())
+        if len(board.get_empty_squares()) == 9:
+            return random.choice([0, 2, 4, 6, 8])
         else:
-            val, index = self.minimax(board)
+            val, index = self.minimax(board, 0)
             # print("Val: {} | Index: {}".format(val, index))
             return index
     
-    def minimax(self, board):
+    def minimax(self, board, alpha=float('-inf'), beta=float('inf')):
         player_MAX = self.player
         player_MIN = 1 if self.player == 2 else 2
 
         # base case terminal state
-        if len(board.get_empty_squares()) == 0:
+        if len(board.get_empty_squares()) == 0 or board.check_winner():
             winner = board.check_winner()
             if winner == player_MAX:
                 return (1, None)
@@ -103,7 +99,7 @@ class SmartCPU(Player):
                 board.grid[index] = player_MAX
                 board.turn = not board.turn
 
-                value, _ = self.minimax(board) # recursively call minimax 
+                value, _ = self.minimax(board, alpha, beta) # recursively call minimax 
 
                 # undo value changes
                 board.turn = not board.turn
@@ -113,6 +109,9 @@ class SmartCPU(Player):
 
                 if value > value_index[0]:
                     value_index = (value, index)
+                alpha = max(alpha, value_index[0])
+                if alpha >= beta:
+                    break
             return value_index
         # find MIN value
         else:
@@ -122,7 +121,7 @@ class SmartCPU(Player):
                 board.grid[index] = player_MIN
                 board.turn = not board.turn
 
-                value, _ = self.minimax(board) # recursively call minimax 
+                value, _ = self.minimax(board, alpha, beta) # recursively call minimax 
 
                 # undo value changes
                 board.turn = not board.turn
@@ -132,40 +131,24 @@ class SmartCPU(Player):
 
                 if value < value_index[0]:
                     value_index = (value, index)
+
+                beta = min(beta, value_index[0])
+                if alpha >= beta:
+                    break
             return value_index
-
-        # check terminal state
-            # return the value(state)
-            # undo
-        # check if player == MAX
-            # value = -inf
-            # for a in actions
-                # value = MAX(value, minimax(Result(state, a)))
-            # return value
-        # check if player == MIN
-            # value = inf
-            # for a in actions
-                # value = MIN(value, minimax(Result(state, a)))
-            # return value
-
-
+        
 def get_stats(board, player1, player2, num_games):
     """board is Board() object, player1 and player2 is Player object, num_games is integer number of games you want simulated"""
     while board.in_game:
-        turn_message = "X Turn" if board.turn else "Y Turn"
-        print(turn_message)
         if board.turn:
             board.grid[player1.get_move(board)] = 1
         else:
             board.grid[player2.get_move(board)] = 2
-        board.print_board()
 
         board.turn = not board.turn
 
         winner = board.check_winner()
         if winner:
-            if isinstance(player1, SmartCPU) or isinstance(player2, SmartCPU):
-                print("Simulating game {}.".format(board.total_games))
             if winner == 1:
                 board.cpu1_wins += 1
             elif winner == 2:
@@ -180,26 +163,50 @@ def get_stats(board, player1, player2, num_games):
             print("{} Wins : {} : {}%".format(player1.name, board.cpu1_wins, round(board.cpu1_wins / board.total_games * 100, 2)))
             print("{} Wins : {} : {}%".format(player2.name, board.cpu2_wins, round(board.cpu2_wins / board.total_games * 100, 2)))
             print("      CATS      : {} : {}%".format(board.total_cats, round(board.total_cats / board.total_games * 100, 2)))
+            return ([board.cpu1_wins, board.cpu2_wins, board.total_cats], [player1.name, player2.name, "CATS"])
 
+def display_bar_chart_of_stats(display_tuple, title, xlabel, ylabel, limit):
+    plt.bar(display_tuple[1], display_tuple[0])
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.ylim(0, limit)
+    plt.show()
+
+# Initialize Players
 random_cpu_1 = RandomCPU("CPU Edward", 1)
 random_cpu_2 = RandomCPU("CPU Trevor", 2)
 smart_cpu_1 = SmartCPU("CPU Francesca", 1)
 smart_cpu_2 = SmartCPU("CPU Anastasia", 2)
 
-# Play Random vs Random
-# game = Board()
-# print("\nRandom CPU vs Random CPU")
-# get_stats(game, random_cpu_1, random_cpu_2, 10000)
+num_games = 200
 
-# Play Random vs CPU
+# Play Random vs Random
+game = Board()
+print("\nRandom CPU vs Random CPU")
+rand_v_rand = get_stats(game, random_cpu_1, random_cpu_2, num_games)
+
+# Play Random vs Smart
 game = Board()
 print("\nRandom CPU vs Smart CPU")
-get_stats(game, random_cpu_1, smart_cpu_2, 1)
+rand_v_smart = get_stats(game, random_cpu_1, smart_cpu_1, num_games)
+game = Board()
+print("\nSmart CPU vs Random CPU")
+rand_v_smart = get_stats(game, smart_cpu_1, random_cpu_1, num_games)
 
-# Play CPU vs CPU
-# game = Board()
-# print("\nSmart CPU vs Smart CPU")
-# get_stats(game, smart_cpu_1, smart_cpu_2, 1)
+# Play Smart vs Smart
+game = Board()
+print("\nSmart CPU vs Smart CPU")
+smart_v_smart_1 = get_stats(game, smart_cpu_1, smart_cpu_2, num_games)
+
+# # Play Smart vs Smart (reversed order)
+game = Board()
+print("\nSmart CPU vs Smart CPU")
+smart_v_smart_2 = get_stats(game, smart_cpu_2, smart_cpu_1, num_games)
 
 
-# USE PANDAS to PLOT PERCENTAGES???
+# Use Matplotlib to Visualize
+display_bar_chart_of_stats(rand_v_rand, "TicTacToe: Random vs Random", "Player", "Number of Wins", num_games)
+display_bar_chart_of_stats(rand_v_smart, "TicTacToe: Random vs Smart", "Player", "Number of Wins", num_games)
+display_bar_chart_of_stats(smart_v_smart_1, "TicTacToe: Smart vs Smart", "Player", "Number of Wins", num_games)
+display_bar_chart_of_stats(smart_v_smart_2, "TicTacToe: Smart vs Smart (Reversed Parameters)", "Player", "Number of Wins", num_games)
